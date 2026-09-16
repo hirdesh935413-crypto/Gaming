@@ -1,60 +1,64 @@
 name: Build GAME TURBO PRO APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
       - master
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
-          unzip -q gradle-8.9-bin.zip
-          echo "$GITHUB_WORKSPACE/gradle-8.9/bin" >> "$GITHUB_PATH"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
-      - name: Check Project
+      - name: Show Project Structure
         run: |
-          echo "===== PROJECT FILES ====="
-          find . -maxdepth 3 -type f | sort
-          echo "========================"
+          echo "===== ROOT ====="
+          ls -la
+          echo "===== FILES ====="
+          find . -maxdepth 4 -type f | sort
+          echo "================"
 
-      - name: Check Gradle
+      - name: Verify Android Project
         run: |
-          gradle --version
+          test -f settings.gradle || test -f settings.gradle.kts
+          test -f app/build.gradle || test -f app/build.gradle.kts
+          echo "Android project detected."
 
-      - name: Build Debug APK
+      - name: Build APK
         run: |
-          gradle assembleDebug --stacktrace
+          gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Find APK
+        if: success()
         run: |
-          echo "===== APK FILES ====="
-          find . -type f -name "*.apk" -print
-          echo "===================="
+          echo "===== GENERATED APK ====="
+          find app/build/outputs -type f -name "*.apk" -print
+          echo "========================="
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: GAME-TURBO-PRO-APK
-          path: |
-            app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
