@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.gameturbopro'
+    namespace 'com.gameturbopro.app'
     compileSdk 35
 
     defaultConfig {
